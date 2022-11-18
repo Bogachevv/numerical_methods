@@ -16,13 +16,33 @@ def interpolate(net: np.ndarray, f: np.ndarray) -> typing.Callable:
     return polynom
 
 
+def solve_gauss(a: np.matrix, f: np.ndarray) -> np.ndarray:
+    # Я гарантирую, что a[i, i] > 0
+
+    n = a.shape[0]
+    for i in range(n - 1):
+        for k in range(i + 1, n):
+            f[k] -= f[i] * (a[k, i] / a[i, i])
+            for j in range(i + 1, n):
+                a[k, j] -= a[i, j] * (a[k, i] / a[i, i])
+            a[k, i] = 0
+    x = np.zeros(n)
+    for i in range(n-1, -1, -1):
+        x[i] = (f[i] - sum(a[i, k] * x[k] for k in range(i + 1, n))) / a[i, i]
+    return x
+
+
 def approach(net: np.ndarray, f: np.array):
     N = 9
     A = np.matrix([[nd ** j for j in range(N)] for nd in net])
     alpha = np.linalg.solve(A.transpose() * A, (f * A).transpose())
-    # np.set_printoptions(precision=4, threshold=5, edgeitems=4, suppress=True)
+    np.set_printoptions(precision=4, threshold=5, edgeitems=4, suppress=True)
     alpha = alpha.A1
-    # print(alpha)
+    print(f"alpha = {alpha}")
+    print(f"{np.linalg.cond(A.transpose() * A)=}")
+    print(f"{np.linalg.det(A.transpose() * A)=}")
+    alpha_gauss = solve_gauss(A.transpose() * A, (f * A).transpose())
+    print(f"alpha_gauss = {alpha_gauss}")
 
     def pol(x: float | np.ndarray) -> float | np.ndarray:
         return sum(ai * (x ** i) for i, ai in enumerate(alpha))
@@ -32,7 +52,7 @@ def approach(net: np.ndarray, f: np.array):
 
 def main():
     x = np.linspace(-5, 4, 1_000)
-    act = (x**3 + 2*(x**2) - 7*x + 3) + np.random.normal(loc=0.0, scale=5.0, size=x.shape)
+    act = (x ** 3 + 2 * (x ** 2) - 7 * x + 3) + np.random.normal(loc=0.0, scale=5.0, size=x.shape)
     # act = np.sin(2*x) + np.random.normal(loc=0.0, scale=0.075, size=x.shape)
     interpol_node_c = 12
     interpol_net = np.take(x, np.linspace(0, 1_000 - 1, interpol_node_c, dtype=int, endpoint=True))
