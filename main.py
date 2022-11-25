@@ -32,15 +32,18 @@ def solve_gauss(a: np.matrix, f: np.ndarray) -> np.ndarray:
     return x
 
 
-def approach(net: np.ndarray, f: np.array):
-    N = 9
-    A = np.matrix([[nd ** j for j in range(N)] for nd in net])
+def approach(net: np.ndarray, f: np.array, n: int):
+    A = np.matrix([[nd ** j for j in range(n + 1)] for nd in net])
+
+    # DEBUG: delete in release version
     alpha = np.linalg.solve(A.transpose() * A, (f * A).transpose())
     np.set_printoptions(precision=4, threshold=5, edgeitems=4, suppress=True)
     alpha = alpha.A1
     print(f"alpha = {alpha}")
     print(f"{np.linalg.cond(A.transpose() * A)=}")
     print(f"{np.linalg.det(A.transpose() * A)=}")
+    # !DEBUG
+
     alpha_gauss = solve_gauss(A.transpose() * A, (f * A).transpose())
     print(f"alpha_gauss = {alpha_gauss}")
 
@@ -51,31 +54,29 @@ def approach(net: np.ndarray, f: np.array):
 
 
 def main():
-    x = np.linspace(-5, 4, 1_000)
-    act = (x ** 3 + 2 * (x ** 2) - 7 * x + 3) + np.random.normal(loc=0.0, scale=5.0, size=x.shape)
-    # act = np.sin(2*x) + np.random.normal(loc=0.0, scale=0.075, size=x.shape)
-    interpol_node_c = 12
-    interpol_net = np.take(x, np.linspace(0, 1_000 - 1, interpol_node_c, dtype=int, endpoint=True))
-    interpol_f = np.take(act, np.linspace(0, 1_000 - 1, interpol_node_c, dtype=int, endpoint=True))
-    pol = interpolate(interpol_net, interpol_f)
+    N = 4
 
-    for i, (node_i, f_i) in enumerate(zip(interpol_net, interpol_f)):
-        print(f"{node_i=:.4f}\t{f_i=:.4f}\t{pol(node_i)=:.4f}\tdelta={abs(pol(node_i) - f_i):.4f}")
+    # <<--loading data-->>
+    with open('function.txt', 'r') as f:
+        points = np.array([[float(x) for x in s.split()] for s in f.readlines()])
+    x_net = points[:, 0]
+    f_net = points[:, 1]
+    print(x_net, f_net)
+    # <<!-loading data-!>>
 
-    approach_node_c = 100
-    approach_net = np.take(x, np.linspace(0, 1_000 - 1, approach_node_c, dtype=int, endpoint=True))
-    approach_f = np.take(act, np.linspace(0, 1_000 - 1, approach_node_c, dtype=int, endpoint=True))
-    apr = approach(approach_net, approach_f)
+    # <<--building interpolating and approximating functions-->>
+    interpol = interpolate(x_net, f_net)
+    appr = approach(x_net, f_net, N)
+    # <<!-building interpolating and approximating functions-!>>
 
-    sigma_interpol = np.std(act - np.array([pol(x_v) for x_v in x]))
-    sigma_approach = np.std(act - apr(x))
-    print(f"{sigma_interpol=:.4f}\t{sigma_approach=:.4f}")
-
-    plt.plot(x, act, c='k')
-    plt.plot(x, np.array([pol(x_v) for x_v in x]), c='b')
-    plt.plot(x, apr(x), c='r')
-    # plt.scatter(net, f, c='k', s=4)
+    # <<--summary graph-->>
+    plt.scatter(x_net, f_net, c='k')
+    arg_sp = np.linspace(min(x_net), max(x_net), 1_000)
+    plt.plot(arg_sp, np.array([interpol(x) for x in arg_sp]), c='b')
+    plt.plot(arg_sp, np.array([appr(x) for x in arg_sp]), c='r')
+    plt.legend(["actual", "interpolate", "approach"])
     plt.show()
+    # <<!-summary graph-!>>
 
 
 if __name__ == '__main__':
