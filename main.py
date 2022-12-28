@@ -1,7 +1,6 @@
-import numpy as np
 import typing
+import numpy as np
 from matplotlib import pyplot as plt
-import scipy.integrate as integrate
 
 
 def interpolate(net: np.ndarray, f: np.ndarray) -> typing.Callable:
@@ -45,27 +44,6 @@ def approach(net: np.ndarray, f: np.array, n: int):
     return pol
 
 
-def get_st_elm(x_net: np.ndarray, f_net, i, j, method: str, n: int = 0) -> float:
-    mask = np.full(x_net.shape, True)
-    mask[i] = False
-    x_net_i = x_net[mask]
-    f_net_i = f_net[mask]
-    mask[i] = True
-    mask[j] = False
-    x_net_j = x_net[mask]
-    f_net_j = f_net[mask]
-    mask[j] = True
-
-    if method == "interpolate":
-        f_i = interpolate(x_net_i, f_net_i)
-        f_j = interpolate(x_net_j, f_net_j)
-    else:
-        f_i = approach(x_net_i, f_net_i, n)
-        f_j = approach(x_net_j, f_net_j, n)
-
-    return integrate.quad(lambda x: (f_i(x) - f_j(x)) ** 2, min(x_net), max(x_net))[0]
-
-
 def main():
     N = 4
 
@@ -90,26 +68,6 @@ def main():
     plt.legend(["actual", "interpolate", "approach"])
     plt.show()
     # <<!-summary graph-!>>
-
-    m_st_interpolate = np.array([[get_st_elm(x_net, f_net, i, j, 'interpolate', N)
-                                  for j in range(len(x_net))] for i in range(len(x_net))])
-
-    m_st_approach = np.array([[get_st_elm(x_net, f_net, i, j, 'approach', N)
-                               for j in range(len(x_net))] for i in range(len(x_net))])
-
-    print()
-    for i in range(len(x_net)):
-        for j in range(len(x_net)):
-            print(f"{m_st_interpolate[i, j]:09.3f}", end='\t')
-        print()
-
-    print()
-    for i in range(len(x_net)):
-        for j in range(len(x_net)):
-            print(f"{m_st_approach[i, j]:09.3f}", end='\t')
-        print()
-
-    print(f"{np.mean(m_st_interpolate)=}\n{np.mean(m_st_approach)=}")
 
 
 if __name__ == '__main__':
